@@ -1,0 +1,16 @@
+package migrations
+
+var DummyString = &dummyString {}
+
+func init()  {
+	DataMap["fileString"] = DummyString
+}
+
+type dummyString struct {
+}
+
+func (t *dummyString) Up() {
+}
+
+func (t *dummyString) Down() {
+}

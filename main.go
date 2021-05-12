@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"github.com/Ravior/go-fast-migrate/migrations"
 	"github.com/Ravior/go-fast-migrate/util"
 	"github.com/golang-module/carbon"
 	"io/ioutil"
@@ -33,6 +32,7 @@ func init() {
 }
 
 func initMigration() {
+	util.FileHelper.CreateDir(migrationPath)
 	// CreateMigration migrations table if not exist
 	_, err := util.DbHelper.Exec(createMigrationSql, conn)
 	util.SysHelper.CheckErr(err)
@@ -113,14 +113,14 @@ func CreateMigration(name string) (string, error) {
 
 	defer migrateFile.Close()
 
-	template, err := util.FileHelper.ReadFile(migrationTemplate)
+	tmpfile, err := util.FileHelper.ReadFile(migrationTemplate)
 
 	if err != nil {
 		return "", err
 	}
 
 	// 迁移模板文件
-	templateStr := string(template)
+	templateStr := string(tmpfile)
 
 	nameArr := strings.Split(name, "_")
 	newNameArr := make([]string, len(nameArr))
@@ -134,10 +134,8 @@ func CreateMigration(name string) (string, error) {
 
 	// 替换模板中占位字符串
 	rs := strings.Replace(templateStr, "DummyString", newName, -1)
-	rs2 := strings.Replace(rs, "dummyString", util.StrHelper.Lcfirst(newName), -1)
-	rs3 := strings.Replace(rs2, "fileString", filename, -1)
 
-	_, err = migrateFileWriter.WriteString(rs3)
+	_, err = migrateFileWriter.WriteString(rs)
 
 	if err != nil {
 		return "", err
@@ -223,7 +221,11 @@ func Migrate() error {
 
 	// Migrate
 	for i, name := range toMigrateFiles {
-		migrations.DataMap[name].Up()
+		_, err := util.ToolHelper.RunGoCmd(migrationPath + name + ".go", "up")
+
+		if err != nil {
+			util.SysHelper.Exit("执行迁移失败", err)
+		}
 
 		// Calculate the batch number, which is need to Migrate
 		if i+1 == toMigrateLen {
@@ -284,7 +286,11 @@ func Rollback(step string) error {
 	}
 
 	for _, name := range rollBackMig {
-		migrations.DataMap[name].Down()
+		_, err := util.ToolHelper.RunGoCmd(migrationPath + name + ".go", "down")
+
+		if err != nil {
+			util.SysHelper.Exit("执行回滚失败", err)
+		}
 	}
 
 	// Delete migrations record
@@ -326,10 +332,18 @@ func Refresh() (bool, error) {
 	if fileLen > 0 {
 		for i, name := range rollBackMig {
 			// down
-			migrations.DataMap[name].Down()
+			_, err := util.ToolHelper.RunGoCmd(migrationPath + name + ".go", "down")
+
+			if err != nil {
+				util.SysHelper.Exit("执行回滚失败", err)
+			}
 
 			// up
-			migrations.DataMap[name].Up()
+			_, err = util.ToolHelper.RunGoCmd(migrationPath + name + ".go", "up")
+
+			if err != nil {
+				util.SysHelper.Exit("执行迁移失败", err)
+			}
 
 			if i == fileLen-1 {
 				symbol = ""

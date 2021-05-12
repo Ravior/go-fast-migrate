@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os/exec"
 	"reflect"
 )
 
@@ -19,4 +20,14 @@ func (t *toolHelper) GetStrParam(key interface{}, _default string) string {
 	}
 
 	return ""
+}
+
+func (t *toolHelper) RunGoCmd(path string, params ...string) (string, error)  {
+	cmd := exec.Command("go", "run", path)
+	cmd.Args = append(cmd.Args, params...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }

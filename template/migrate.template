@@ -1,16 +1,30 @@
-package migrations
+package main
 
-var DummyString = &dummyString {}
+import (
+	"fmt"
+	"os"
+)
 
-func init()  {
-	DataMap["fileString"] = DummyString
+func main() {
+	if len(os.Args) > 1 {
+		cmd := os.Args[1]
+		if cmd == "up" {
+			up()
+		} else if cmd == "down" {
+			down()
+		}
+	}
 }
 
-type dummyString struct {
+// UP 迁移操作
+func up()  {
+	fmt.Println("DummyString Up")
+	// Write your migrate action here
 }
 
-func (t *dummyString) Up() {
+// Down 迁移回滚
+func down()  {
+	fmt.Println("DummyString Down")
+	// Write your rollback action here
 }
 
-func (t *dummyString) Down() {
-}

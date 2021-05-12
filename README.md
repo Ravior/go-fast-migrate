@@ -7,7 +7,11 @@ Like PHP Lavarel Framework, Use go-fast-migrate to Manage your database
 
 迁移可以很容易地构建应用的数据库表结构。如果你曾经频繁告知团队成员需要手动添加列到本地数据库表结构以维护本地开发环境，那么这正是数据库迁移所致力于解决的问题。
 
+###  编译
 
+```go
+go build -o migrate main.go
+```
 
 ### 新建迁移文件
 
@@ -36,34 +40,10 @@ drwxr-xr-x  14 zhoufei  staff   448  5 10 20:38 ..
 生成的迁移文件如下：
 
 ```go
-package migrations
-
-
-var CreateUserTable2021_05_10_182112 = &createUserTable2021_05_10_182112 {}
-
-func init()  {
-	DataMap["2021_05_10_182112_create_user_table"] = CreateUserTable2021_05_10_182112
-}
-
-type createUserTable2021_05_10_182112 struct {
-}
-
-func (t *createUserTable2021_05_10_182112) Up() {
-    // 在这里定义表创建/修改操作
-}
-
-func (t *createUserTable2021_05_10_182112) Down() {
-    // 定义相关操作的回滚
-}
-
-```
-
-其中，我们需要在`Up()`中补充创建表/修改表等操作，在`Down()`方法中实现`Up()`操作的回退。
-
-以创建用户表操作为例：
-
-```go
-func (t *createUserTable2021_05_10_182112) Up() {
+// UP 迁移操作
+func up()  {
+	fmt.Println("CreateUserTable2021_05_12_210511 Up")
+	// Write your migrate action here
 	// 创建用户表
 	schema.NewSchema().CreateTable("user", func(builder *schema.Builder) {
 		builder.BigIncrements("id")
@@ -81,7 +61,40 @@ func (t *createUserTable2021_05_10_182112) Up() {
 	})
 }
 
-func (t *createUserTable2021_05_10_182112) Down() {
+// Down 迁移回滚
+func down()  {
+	fmt.Println("CreateUserTable2021_05_12_210511 Down")
+	// Write your rollback action here
+	// 创建用户表
+	schema.NewSchema().DropTable("user")
+}
+
+```
+
+其中，我们需要在`up()`中补充创建表/修改表等操作，在`down()`方法中实现`up()`操作的回退。
+
+以创建用户表操作为例：
+
+```go
+func up() {
+	// 创建用户表
+	schema.NewSchema().CreateTable("user", func(builder *schema.Builder) {
+		builder.BigIncrements("id")
+		builder.String("open_id", 32).Unique().Default("").Comment("平台用户标识")
+		builder.String("nickname", 64).Default("").Comment("用户在平台昵称")
+		builder.String("avatar").Default("").Comment("用户在平台头像")
+		builder.UnsignedInteger("last_login_time").Default(0).Comment("最新登录时间")
+		builder.UnsignedInteger("login_times").Default(0).Comment("登陆次数")
+		builder.UnsignedInteger("continue_login_days").Default(0).Comment("连续登陆天数")
+		builder.UnsignedInteger("date").Default(0).Comment("注册日期")
+		builder.String("qq", 20).Unique().Default("").Comment("用户QQ号")
+		builder.UnsignedTinyInteger("status").Default(0).Comment("用户状态，0:正常;1:可疑；2:封禁")
+
+		builder.Timestamps()
+	})
+}
+
+func down() {
 	// 删除用户表
 	schema.NewSchema().DropTableIfExists("user")
 }
@@ -130,4 +143,8 @@ mysql> desc user;
 
 ```shell script
 ./migrate refresh
+```
 
+## 其他
+
+- 支持多数据库源
